@@ -1,0 +1,1472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Audiogram Creator</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #0d0d1a;
+  color: #e0e0ff;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+header {
+  padding: 16px 28px;
+  border-bottom: 1px solid rgba(0,119,181,0.25);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(0,0,0,0.3);
+}
+
+.logo {
+  width: 30px; height: 30px;
+  background: #0077B5;
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 900; font-size: 15px; color: #fff;
+}
+
+header h1 { font-size: 18px; font-weight: 700; color: #fff; }
+
+.main { display: flex; flex: 1; overflow: hidden; }
+
+.sidebar {
+  width: 300px;
+  padding: 20px;
+  border-right: 1px solid rgba(255,255,255,0.07);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  background: rgba(0,0,0,0.2);
+}
+
+.section-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(255,255,255,0.35);
+  margin-bottom: 10px;
+}
+
+.field { display: flex; flex-direction: column; gap: 6px; }
+
+.field label { font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.6); }
+
+.field input[type="text"] {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 7px;
+  padding: 9px 12px;
+  color: #fff;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.field input[type="text"]:focus { border-color: #0077B5; }
+
+.upload-area {
+  background: rgba(255,255,255,0.03);
+  border: 1.5px dashed rgba(255,255,255,0.12);
+  border-radius: 9px;
+  padding: 14px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  min-height: 70px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+.upload-area:hover, .upload-area.dragging { border-color: #0077B5; background: rgba(0,119,181,0.06); }
+.upload-area.done { border-color: #00b57a; border-style: solid; background: rgba(0,181,122,0.05); }
+.upload-area input[type="file"] {
+  position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+}
+.upload-icon { font-size: 20px; }
+.upload-label { font-size: 12px; color: rgba(255,255,255,0.45); }
+.upload-label strong { color: #0077B5; font-weight: 600; }
+.upload-area.done .upload-label { color: #00b57a; }
+
+textarea {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #e0e0ff;
+  font-size: 13px;
+  font-family: inherit;
+  line-height: 1.5;
+  resize: vertical;
+  outline: none;
+  width: 100%;
+  transition: border-color 0.2s;
+}
+textarea:focus { border-color: #0077B5; }
+textarea::placeholder { color: rgba(255,255,255,0.25); }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 11px 18px; border-radius: 8px;
+  font-size: 13px; font-weight: 600; cursor: pointer; border: none;
+  transition: all 0.15s; width: 100%; margin-top: 4px;
+}
+.btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.btn-primary { background: #0077B5; color: #fff; }
+.btn-primary:hover:not(:disabled) { background: #006197; }
+.btn-record { background: rgba(220,50,50,0.85); color: #fff; }
+.btn-record:hover:not(:disabled) { background: rgba(200,30,30,0.9); }
+.btn-download { background: #00875a; color: #fff; }
+.btn-download:hover { background: #006e49; }
+
+.field-row { display: flex; gap: 10px; }
+.field-row .field { flex: 1; }
+
+input[type="color"] {
+  width: 100%; height: 34px;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 7px;
+  background: rgba(255,255,255,0.05);
+  cursor: pointer; padding: 2px 4px;
+}
+
+input[type="range"] {
+  width: 100%; height: 4px;
+  accent-color: #0077B5;
+  cursor: pointer;
+}
+
+.range-row { display: flex; justify-content: space-between; align-items: center; }
+.range-val { font-size: 12px; color: rgba(255,255,255,0.5); font-variant-numeric: tabular-nums; }
+
+.caption-list {
+  display: flex; flex-direction: column; gap: 5px;
+  max-height: 260px; overflow-y: auto;
+  padding-right: 2px;
+}
+.caption-list::-webkit-scrollbar { width: 3px; }
+.caption-list::-webkit-scrollbar-thumb { background: rgba(0,119,181,0.4); border-radius: 2px; }
+
+.caption-item { display: flex; flex-direction: column; gap: 2px; }
+.caption-time { font-size: 10px; color: rgba(255,255,255,0.3); font-variant-numeric: tabular-nums; }
+.caption-item input[type="text"] {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 6px;
+  padding: 7px 10px;
+  color: #e0e0ff;
+  font-size: 12px;
+  font-family: inherit;
+  outline: none;
+  width: 100%;
+  transition: border-color 0.15s;
+}
+.caption-item input[type="text"]:focus { border-color: #0077B5; }
+
+.preview-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 28px;
+  gap: 20px;
+  overflow: hidden;
+}
+
+.canvas-wrapper {
+  position: relative;
+  box-shadow: 0 0 80px rgba(0,119,181,0.25), 0 0 0 1px rgba(255,255,255,0.07);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+#mainCanvas {
+  display: block;
+  width: 540px;
+  height: 540px;
+}
+
+.controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.status-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.4);
+}
+
+.rec-dot {
+  width: 7px; height: 7px;
+  background: #ff4444;
+  border-radius: 50%;
+  animation: blink 1s ease-in-out infinite;
+}
+@keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0.2; } }
+
+.progress-wrap {
+  width: 260px; height: 3px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 2px; overflow: hidden;
+}
+.progress-fill { height: 100%; background: #0077B5; width: 0%; transition: width 0.15s; }
+
+#vizCanvas {
+  /* Must stay in-viewport so Chrome doesn't throttle the WebGL context.
+     1px, opacity near-zero = invisible to users but browser keeps GPU rendering. */
+  position: fixed; top: 0; left: 0;
+  width: 1px; height: 1px;
+  pointer-events: none;
+  opacity: 0.002;
+}
+
+/* ── Sidebar scrollbar ── */
+.sidebar::-webkit-scrollbar { width: 5px; }
+.sidebar::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); }
+.sidebar::-webkit-scrollbar-thumb { background: rgba(0,119,181,0.4); border-radius: 3px; }
+.sidebar::-webkit-scrollbar-thumb:hover { background: rgba(0,119,181,0.7); }
+
+/* ── Caption modal ── */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,0.78);
+  display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(4px);
+}
+.modal-box {
+  background: #111827;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  width: min(900px, 96vw);
+  max-height: 88vh;
+  display: flex; flex-direction: column;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+}
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 22px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  flex-shrink: 0;
+}
+.modal-header h2 { font-size: 16px; font-weight: 700; color: #fff; }
+.modal-header-actions { display: flex; gap: 8px; }
+.modal-body {
+  overflow-y: auto; flex: 1;
+  padding: 0;
+}
+.modal-body::-webkit-scrollbar { width: 6px; }
+.modal-body::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); }
+.modal-body::-webkit-scrollbar-thumb { background: rgba(0,119,181,0.45); border-radius: 3px; }
+.caption-table {
+  width: 100%; border-collapse: collapse;
+  font-size: 13px;
+}
+.caption-table thead th {
+  text-align: left; padding: 10px 14px;
+  font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: rgba(255,255,255,0.35);
+  background: rgba(255,255,255,0.03);
+  position: sticky; top: 0; z-index: 1;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.caption-table tbody tr { border-bottom: 1px solid rgba(255,255,255,0.05); }
+.caption-table tbody tr:hover { background: rgba(255,255,255,0.025); }
+.caption-table td { padding: 7px 10px; vertical-align: middle; }
+.caption-table td:first-child { color: rgba(255,255,255,0.3); font-size: 11px; width: 36px; text-align: center; }
+.caption-table td:last-child { width: 36px; text-align: center; }
+.caption-table input[type="text"] {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 6px; padding: 6px 10px;
+  color: #e0e0ff; font-size: 13px;
+  font-family: inherit; outline: none; width: 100%;
+  transition: border-color 0.15s;
+}
+.caption-table input[type="text"]:focus { border-color: #0077B5; }
+.caption-table input[type="number"] {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 6px; padding: 6px 8px;
+  color: #e0e0ff; font-size: 13px;
+  font-family: inherit; outline: none; width: 80px;
+  transition: border-color 0.15s;
+  font-variant-numeric: tabular-nums;
+}
+.caption-table input[type="number"]:focus { border-color: #0077B5; }
+.btn-icon {
+  background: none; border: none; cursor: pointer;
+  color: rgba(255,255,255,0.3); font-size: 15px;
+  padding: 4px; border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.btn-icon:hover { color: #ff5555; background: rgba(255,50,50,0.1); }
+.btn-sm {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 14px; border-radius: 7px;
+  font-size: 12px; font-weight: 600; cursor: pointer; border: none;
+  transition: all 0.15s;
+}
+.modal-footer {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 22px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  flex-shrink: 0; gap: 8px;
+}
+.btn-add-row {
+  background: rgba(0,119,181,0.15); color: #4db8ff;
+  border: 1px dashed rgba(0,119,181,0.4);
+  border-radius: 7px; padding: 7px 14px;
+  font-size: 12px; font-weight: 600; cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-add-row:hover { background: rgba(0,119,181,0.25); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">A</div>
+  <h1>Audiogram Creator</h1>
+</header>
+
+<div class="main">
+  <aside class="sidebar">
+
+    <div>
+      <div class="section-label">Speaker</div>
+      <div class="field" style="margin-bottom:10px">
+        <label>Name</label>
+        <input type="text" id="speakerName" placeholder="Jane Smith">
+      </div>
+      <div class="field" style="margin-bottom:10px">
+        <label>Title (optional)</label>
+        <input type="text" id="speakerTitle" placeholder="CEO at Acme Co.">
+      </div>
+      <div class="field">
+        <label>Profile Image</label>
+        <div class="upload-area" id="imageZone">
+          <div class="upload-icon">🖼️</div>
+          <div class="upload-label"><strong>Click</strong> or drop image</div>
+          <input type="file" id="imageFile" accept="image/*">
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label">Audio</div>
+      <div class="field">
+        <label>WAV / Audio File</label>
+        <div class="upload-area" id="audioZone">
+          <div class="upload-icon">🎙️</div>
+          <div class="upload-label"><strong>Click</strong> or drop audio</div>
+          <input type="file" id="audioFile" accept="audio/*">
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label">Colors</div>
+      <div class="field-row">
+        <div class="field">
+          <label>Primary</label>
+          <input type="color" id="colPrimary" value="#0077B5">
+        </div>
+        <div class="field">
+          <label>Accent</label>
+          <input type="color" id="colAccent" value="#00AFDB">
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label">Transcript (optional)</div>
+      <div class="field">
+        <label>Plain text — auto-timed</label>
+        <textarea id="transcriptInput" placeholder="Paste the spoken text here and it will be auto-synced to the audio…" rows="3"></textarea>
+      </div>
+      <div class="field" style="margin-top:8px">
+        <label>Whisper JSON — precise timing</label>
+        <div class="upload-area" id="whisperZone">
+          <div class="upload-icon">⏱️</div>
+          <div class="upload-label"><strong>Click</strong> or drop Whisper JSON</div>
+          <input type="file" id="whisperFile" accept=".json,application/json">
+        </div>
+      </div>
+      <div class="field" style="margin-top:10px">
+        <div class="range-row">
+          <label>Words per caption</label>
+          <span class="range-val" id="chunkSizeVal">5</span>
+        </div>
+        <input type="range" id="chunkSize" min="2" max="12" value="5" step="1">
+      </div>
+      <div class="field" style="margin-top:8px">
+        <div class="range-row">
+          <label>Text pace</label>
+          <span class="range-val" id="textPaceVal">1.0×</span>
+        </div>
+        <input type="range" id="textPace" min="0.3" max="3.0" value="1.0" step="0.1">
+      </div>
+    </div>
+
+    <div id="captionEditorTrigger" style="display:none">
+      <div class="section-label">Captions</div>
+      <span id="captionCount" style="font-size:12px;color:rgba(255,255,255,0.45);display:block;margin-bottom:8px"></span>
+      <button class="btn btn-primary" id="editCaptionsBtn">✎ Edit Captions</button>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:auto">
+      <button class="btn btn-primary" id="previewBtn" disabled>▶ Preview</button>
+      <button class="btn btn-record" id="recordBtn" disabled>⏺ Record Video</button>
+      <button class="btn btn-download" id="downloadBtn" style="display:none">⬇ Download .webm</button>
+    </div>
+
+  </aside>
+
+  <main class="preview-area">
+    <div class="canvas-wrapper">
+      <canvas id="mainCanvas" width="1080" height="1080"></canvas>
+    </div>
+    <div class="controls">
+      <div class="status-row">
+        <span id="recDot" class="rec-dot" style="display:none"></span>
+        <span id="statusText">Upload an audio file to start</span>
+      </div>
+      <div class="progress-wrap" id="progressWrap" style="display:none">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<canvas id="vizCanvas"></canvas>
+
+<!-- Caption Editor Modal -->
+<div id="captionModal" class="modal-overlay" style="display:none">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2>Edit Captions</h2>
+      <div class="modal-header-actions">
+        <button class="btn-sm" id="downloadCaptionsBtn" style="background:#00875a;color:#fff">⬇ Download JSON</button>
+        <button class="btn-sm" id="closeCaptionModalBtn" style="background:rgba(255,255,255,0.08);color:#ccc">✕ Close</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <table class="caption-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Caption text</th>
+            <th>Start (s)</th>
+            <th>End (s)</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="captionTableBody"></tbody>
+      </table>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-add-row" id="addCaptionRowBtn">+ Add row</button>
+      <button class="btn-sm" id="closeCaptionModalBtn2" style="background:rgba(255,255,255,0.08);color:#ccc">Done</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+// CONSTANTS
+// ─────────────────────────────────────────────
+const W = 1080;
+const TOP_H = 165;
+const BOT_H_TEXT = 195;
+
+const WORDS_PER_CHUNK = 5;
+
+function getLayout() {
+  const hasText = S && S.chunks && S.chunks.length > 0;
+  const BOT_H = hasText ? BOT_H_TEXT : 0;
+  return { BOT_H, VIZ_H: W - TOP_H - BOT_H };
+}
+
+// ─────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────
+const S = {
+  speakerName: '',
+  speakerTitle: '',
+  speakerImage: null,
+  audioFile: null,
+  audioBuffer: null,
+  audioCtx: null,
+  analyser: null,
+  sourceNode: null,
+  freqData: null,
+  waveData: null,
+  freqRGBA: new Uint8Array(256 * 4),
+  waveRGBA: new Uint8Array(256 * 4),
+  transcript: '',
+  whisperData: null,
+  chunks: [],
+  wordsPerChunk: 5,
+  textPace: 1.0,
+  colA: [0.0, 0.467, 0.706],
+  colB: [0.0, 0.686, 0.859],
+  isPlaying: false,
+  isPaused: false,
+  isRecording: false,
+  volumeSmooth: 0,
+  playStart: 0,
+  duration: 0,
+  gl: null,
+  program: null,
+  freqTex: null,
+  waveTex: null,
+  mediaRecorder: null,
+  recordedChunks: [],
+  downloadUrl: null,
+  rafId: null,
+  stopCallback: null,
+  captureTrack: null,
+};
+
+// ─────────────────────────────────────────────
+// GLSL SHADERS
+// ─────────────────────────────────────────────
+const VS = `
+attribute vec2 a_pos;
+void main() { gl_Position = vec4(a_pos, 0.0, 1.0); }
+`;
+
+const FS = `
+precision highp float;
+
+uniform vec2  u_res;
+uniform float u_time;
+uniform float u_vol;
+uniform sampler2D u_freq;
+uniform sampler2D u_wave;
+uniform vec3  u_colA;   // primary color
+uniform vec3  u_colB;   // accent color
+
+const float PI  = 3.14159265359;
+const float TAU = 6.28318530718;
+
+float sFreq(float t) { return texture2D(u_freq, vec2(clamp(t, 0.0, 1.0), 0.5)).r; }
+float sWave(float t) { return texture2D(u_wave, vec2(clamp(t, 0.0, 1.0), 0.5)).r * 2.0 - 1.0; }
+
+void main() {
+  vec2 p = (gl_FragCoord.xy - u_res * 0.5) / min(u_res.x, u_res.y);
+  float r   = length(p);
+  float ang = atan(p.y, p.x);
+
+  // Full circle, clockwise from top.
+  float tAng = fract((ang + PI * 0.5) / TAU);
+
+  // Mirror left/right: both halves show the same spectrum, symmetric display.
+  float tMir = tAng < 0.5 ? tAng * 2.0 : (1.0 - tAng) * 2.0; // 0=top, 1=bottom
+
+  // Log mapping focused on voice range: 80 Hz (top) → 5 kHz (bottom).
+  // Voice energy (200 Hz–3 kHz) fills roughly the middle 60% of each half-arc.
+  float hz    = exp(4.38 + tMir * 4.13);  // e^4.38≈80 Hz, e^8.51≈5000 Hz
+  float tFreq = clamp(hz / 22050.0, 0.0, 1.0);
+  float freq  = sFreq(tFreq);
+  float wave  = sWave(tMir);
+
+  // ── Base background ──────────────────────────────────────────────
+  vec3 col = u_colA * 0.08 + vec3(0.006, 0.006, 0.024);
+
+  // ── Slowly drifting background nebula blobs ──────────────────────
+  // Two soft gaussian blobs that orbit very slowly
+  vec2 b1 = vec2(sin(u_time * 0.031) * 0.28, cos(u_time * 0.023) * 0.20);
+  vec2 b2 = vec2(cos(u_time * 0.027) * 0.22, sin(u_time * 0.019) * 0.28);
+  vec2 b3 = vec2(sin(u_time * 0.018) * 0.18, sin(u_time * 0.041) * 0.16);
+  float n1 = exp(-dot(p - b1, p - b1) * 4.5);
+  float n2 = exp(-dot(p - b2, p - b2) * 5.5);
+  float n3 = exp(-dot(p - b3, p - b3) * 6.0);
+  col += u_colA * (n1 * 0.055 + n3 * 0.04);
+  col += u_colB * n2 * 0.045;
+
+  // Radial vignette
+  col *= 1.0 - smoothstep(0.38, 0.64, r) * 0.55;
+
+  // ── Radial frequency bars ────────────────────────────────────────
+  float innerR = 0.22;
+  float barLen = freq * (0.20 + u_vol * 0.10);
+  float outerR = innerR + barLen;
+
+  if (r > innerR * 0.97 && r < outerR + 0.002) {
+    float t    = clamp((r - innerR) / max(barLen, 0.001), 0.0, 1.0);
+    vec3  bc   = mix(u_colA, u_colB, freq * 0.85 + 0.15);
+    float br   = pow(1.0 - t, 0.5) * 1.6;
+    float mask = smoothstep(outerR + 0.002, outerR - 0.001, r)
+               * smoothstep(innerR * 0.97,  innerR,          r);
+    col += bc * br * mask;
+  }
+
+  // ── Inner ring glow ──────────────────────────────────────────────
+  float rDist = abs(r - innerR);
+  col += mix(u_colA, u_colB, freq * 0.6) * exp(-rDist * 135.0) * (0.6 + freq * 0.75);
+
+  // ── Outer halo ring (very slow slow breath) ──────────────────────
+  float haloR = 0.40 + sin(u_time * 0.38) * 0.004;
+  col += u_colA * exp(-abs(r - haloR) * 290.0) * (0.09 + u_vol * 0.16);
+
+  // ── Central soft glow — no hard shape, reacts to volume ──────────
+  col += mix(u_colA, u_colB, 0.4) * exp(-r * r * 200.0) * (0.22 + u_vol * 0.80);
+  col += u_colA * 0.035 / (r * r + 0.09) * (0.12 + u_vol * 0.18);
+
+  // ── Gamma ────────────────────────────────────────────────────────
+  col = pow(max(col, vec3(0.0)), vec3(0.88));
+
+  gl_FragColor = vec4(col, 1.0);
+}
+`;
+
+// ─────────────────────────────────────────────
+// WEBGL INIT
+// ─────────────────────────────────────────────
+function initWebGL() {
+  const { VIZ_H } = getLayout();
+  const vc = document.getElementById('vizCanvas');
+  vc.width  = W;
+  vc.height = VIZ_H;
+
+  const gl = vc.getContext('webgl', { antialias: false, alpha: false, preserveDrawingBuffer: true });
+  if (!gl) { alert('WebGL not supported'); return false; }
+  S.gl = gl;
+
+  const vs = compileShader(gl, gl.VERTEX_SHADER,   VS);
+  const fs = compileShader(gl, gl.FRAGMENT_SHADER, FS);
+  if (!vs || !fs) return false;
+
+  const prog = gl.createProgram();
+  gl.attachShader(prog, vs);
+  gl.attachShader(prog, fs);
+  gl.linkProgram(prog);
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+    console.error(gl.getProgramInfoLog(prog)); return false;
+  }
+  S.program = prog;
+  gl.useProgram(prog);
+
+  // Full-screen quad
+  const buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+  const loc = gl.getAttribLocation(prog, 'a_pos');
+  gl.enableVertexAttribArray(loc);
+  gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+
+  // Static uniforms
+  gl.uniform2f(gl.getUniformLocation(prog, 'u_res'), W, getLayout().VIZ_H);
+  gl.uniform1i(gl.getUniformLocation(prog, 'u_freq'), 0);
+  gl.uniform1i(gl.getUniformLocation(prog, 'u_wave'), 1);
+  gl.uniform3fv(gl.getUniformLocation(prog, 'u_colA'), S.colA);
+  gl.uniform3fv(gl.getUniformLocation(prog, 'u_colB'), S.colB);
+
+  // Textures
+  S.freqTex = makeTex(gl, 256);
+  S.waveTex = makeTex(gl, 256);
+
+  return true;
+}
+
+function compileShader(gl, type, src) {
+  const s = gl.createShader(type);
+  gl.shaderSource(s, src);
+  gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+    console.error(gl.getShaderInfoLog(s)); return null;
+  }
+  return s;
+}
+
+function makeTex(gl, size) {
+  const t = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, t);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(size * 4));
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  return t;
+}
+
+function uploadTex(gl, tex, data, rgba) {
+  const n = data.length;
+  for (let i = 0; i < n; i++) {
+    rgba[i*4] = rgba[i*4+1] = rgba[i*4+2] = data[i];
+    rgba[i*4+3] = 255;
+  }
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, n, 1, gl.RGBA, gl.UNSIGNED_BYTE, rgba);
+}
+
+// ─────────────────────────────────────────────
+// AUDIO
+// ─────────────────────────────────────────────
+async function setupAudio(file) {
+  if (S.audioCtx) S.audioCtx.close();
+  S.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const ab = await file.arrayBuffer();
+  S.audioBuffer = await S.audioCtx.decodeAudioData(ab);
+  S.duration = S.audioBuffer.duration;
+
+  S.analyser = S.audioCtx.createAnalyser();
+  S.analyser.fftSize = 512;
+  S.analyser.smoothingTimeConstant = 0.91;
+
+  const n = S.analyser.frequencyBinCount; // 256
+  S.freqData = new Uint8Array(n);
+  S.waveData = new Uint8Array(n);
+}
+
+function playAudio(onEnded) {
+  if (S.sourceNode) { try { S.sourceNode.stop(); } catch(e){} }
+
+  S.sourceNode = S.audioCtx.createBufferSource();
+  S.sourceNode.buffer = S.audioBuffer;
+  S.sourceNode.connect(S.analyser);
+
+  if (S.recordDest) {
+    S.analyser.connect(S.recordDest);
+  }
+  S.analyser.connect(S.audioCtx.destination);
+
+  S.playStart = S.audioCtx.currentTime;
+  S.sourceNode.start(0);
+  S.isPlaying = true;
+
+  S.sourceNode.onended = () => {
+    S.isPlaying = false;
+    if (onEnded) onEnded();
+  };
+}
+
+// ─────────────────────────────────────────────
+// TEXT ALIGNMENT
+// ─────────────────────────────────────────────
+
+// Plain text → evenly distributed chunks
+function buildChunksFromTranscript(text, duration) {
+  const words = text.trim().split(/\s+/).filter(Boolean);
+  if (!words.length || !duration) return [];
+
+  const wpc = S.wordsPerChunk || 5;
+  const rawChunks = [];
+  for (let i = 0; i < words.length; i += wpc) {
+    rawChunks.push(words.slice(i, i + wpc));
+  }
+
+  const charCounts   = rawChunks.map(ch => ch.reduce((s, w) => s + w.length, 0));
+  const totalChars   = charCounts.reduce((a, b) => a + b, 0);
+  const pace         = S.textPace || 1.0;
+  const basePerChunk = duration * 0.06 / rawChunks.length * pace;
+  const remaining    = duration * pace - basePerChunk * rawChunks.length;
+
+  let elapsed = 0;
+  return rawChunks.map((ch, i) => {
+    const dur   = basePerChunk + (charCounts[i] / totalChars) * remaining;
+    const start = elapsed;
+    elapsed    += dur;
+    return { text: ch.join(' '), start, end: elapsed };
+  });
+}
+
+// Whisper JSON → timestamp-based chunks, split long segments by wpc
+function parseWhisperJSON(segments) {
+  if (!Array.isArray(segments) || !segments.length) return [];
+  const wpc = S.wordsPerChunk || 5;
+  const chunks = [];
+
+  for (let si = 0; si < segments.length; si++) {
+    const seg   = segments[si];
+    const start = seg.timestamp[0];
+    // Gracefully handle null end timestamp (last segment in some Whisper outputs)
+    const end   = seg.timestamp[1] != null
+      ? seg.timestamp[1]
+      : si + 1 < segments.length ? segments[si + 1].timestamp[0] : start + 5;
+
+    const text  = (seg.text || '').trim();
+    const words = text.split(/\s+/).filter(Boolean);
+    if (!words.length) continue;
+
+    if (words.length <= wpc) {
+      chunks.push({ text, start, end });
+    } else {
+      // Split segment proportionally into sub-chunks
+      const dur = end - start;
+      for (let i = 0; i < words.length; i += wpc) {
+        const sub  = words.slice(i, i + wpc);
+        const t0   = start + (i / words.length) * dur;
+        const t1   = start + (Math.min(i + wpc, words.length) / words.length) * dur;
+        chunks.push({ text: sub.join(' '), start: t0, end: t1 });
+      }
+    }
+  }
+  return chunks;
+}
+
+function rebuildChunks() {
+  if (S.whisperData) {
+    S.chunks = parseWhisperJSON(S.whisperData);
+  } else if (S.transcript && S.duration) {
+    S.chunks = buildChunksFromTranscript(S.transcript, S.duration);
+  } else {
+    S.chunks = [];
+  }
+  renderChunkEditor();
+}
+
+function renderChunkEditor() {
+  const trigger = document.getElementById('captionEditorTrigger');
+  const count   = document.getElementById('captionCount');
+  if (!S.chunks.length) { trigger.style.display = 'none'; return; }
+  trigger.style.display = '';
+  count.textContent = `${S.chunks.length} caption${S.chunks.length !== 1 ? 's' : ''}`;
+}
+
+// ── Caption Modal ──────────────────────────────────────────────────────
+function openCaptionModal() {
+  renderCaptionTable();
+  document.getElementById('captionModal').style.display = 'flex';
+}
+
+function closeCaptionModal() {
+  document.getElementById('captionModal').style.display = 'none';
+  renderChunkEditor(); // refresh count
+}
+
+function renderCaptionTable() {
+  const tbody = document.getElementById('captionTableBody');
+  tbody.innerHTML = '';
+  S.chunks.forEach((chunk, i) => {
+    tbody.appendChild(makeCaptionRow(chunk, i));
+  });
+}
+
+function makeCaptionRow(chunk, i) {
+  const tr = document.createElement('tr');
+
+  // Index
+  const tdIdx = document.createElement('td');
+  tdIdx.textContent = i + 1;
+
+  // Text
+  const tdText = document.createElement('td');
+  tdText.style.width = '100%';
+  const txtInput = document.createElement('input');
+  txtInput.type  = 'text';
+  txtInput.value = chunk.text;
+  txtInput.addEventListener('input', e => { S.chunks[i].text = e.target.value; });
+  tdText.appendChild(txtInput);
+
+  // Start
+  const tdStart = document.createElement('td');
+  const startInput = document.createElement('input');
+  startInput.type  = 'number';
+  startInput.step  = '0.1';
+  startInput.min   = '0';
+  startInput.value = chunk.start.toFixed(2);
+  startInput.addEventListener('change', e => {
+    S.chunks[i].start = parseFloat(e.target.value) || 0;
+  });
+  tdStart.appendChild(startInput);
+
+  // End
+  const tdEnd = document.createElement('td');
+  const endInput = document.createElement('input');
+  endInput.type  = 'number';
+  endInput.step  = '0.1';
+  endInput.min   = '0';
+  endInput.value = chunk.end.toFixed(2);
+  endInput.addEventListener('change', e => {
+    S.chunks[i].end = parseFloat(e.target.value) || 0;
+  });
+  tdEnd.appendChild(endInput);
+
+  // Delete
+  const tdDel = document.createElement('td');
+  const delBtn = document.createElement('button');
+  delBtn.className = 'btn-icon';
+  delBtn.textContent = '✕';
+  delBtn.title = 'Delete row';
+  delBtn.addEventListener('click', () => {
+    S.chunks.splice(i, 1);
+    renderCaptionTable();
+    renderChunkEditor();
+  });
+  tdDel.appendChild(delBtn);
+
+  tr.append(tdIdx, tdText, tdStart, tdEnd, tdDel);
+  return tr;
+}
+
+function downloadCaptionsJSON() {
+  const json = JSON.stringify(
+    S.chunks.map(c => ({ timestamp: [+c.start.toFixed(3), +c.end.toFixed(3)], text: c.text })),
+    null, 2
+  );
+  const blob = new Blob([json], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = 'captions.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function currentChunk(t) {
+  const ch = S.chunks;
+  for (let i = ch.length - 1; i >= 0; i--) {
+    if (t >= ch[i].start) {
+      const nextStart = i + 1 < ch.length ? ch[i+1].start : Infinity;
+      if (t < nextStart + 0.3) return ch[i];
+    }
+  }
+  return null;
+}
+
+// ─────────────────────────────────────────────
+// CANVAS 2D COMPOSITING
+// ─────────────────────────────────────────────
+const mainCanvas = document.getElementById('mainCanvas');
+const ctx = mainCanvas.getContext('2d', { willReadFrequently: false });
+
+function drawFrame(currentTime, ts, volume, VIZ_H) {
+  const { BOT_H } = getLayout();
+
+  // Background
+  ctx.fillStyle = '#050510';
+  ctx.fillRect(0, 0, W, W);
+
+  // Paste WebGL viz into middle band
+  const vc = document.getElementById('vizCanvas');
+  ctx.drawImage(vc, 0, TOP_H, W, VIZ_H);
+
+  // Separator lines
+  ctx.strokeStyle = 'rgba(0,119,181,0.2)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(50, TOP_H); ctx.lineTo(W-50, TOP_H); ctx.stroke();
+  if (BOT_H > 0) {
+    ctx.beginPath(); ctx.moveTo(50, TOP_H + VIZ_H); ctx.lineTo(W-50, TOP_H + VIZ_H); ctx.stroke();
+  }
+
+  drawSpeaker(ts, volume);
+  if (BOT_H > 0) drawText(currentTime, TOP_H + VIZ_H, BOT_H);
+}
+
+function drawSpeaker(ts, volume) {
+  const cx = 88, cy = TOP_H / 2;
+  const r  = 52;
+
+  // Profile image
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.clip();
+  if (S.speakerImage) {
+    ctx.drawImage(S.speakerImage, cx - r, cy - r, r * 2, r * 2);
+  } else {
+    ctx.fillStyle = '#142b42';
+    ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    ctx.font = '44px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('👤', cx, cy);
+  }
+  ctx.restore();
+
+  // Animated glow ring
+  const pulse = 0.7 + Math.sin(ts * 3.2) * 0.3 * Math.max(volume * 4, 0.15);
+  const ringR = r + 5;
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, ringR, 0, Math.PI * 2);
+  ctx.strokeStyle = `rgba(0, ${Math.round(140 + volume * 100)}, 220, ${0.55 * pulse})`;
+  ctx.lineWidth = 2.5;
+  ctx.shadowColor = '#0077B5';
+  ctx.shadowBlur  = 12 * pulse;
+  ctx.stroke();
+  ctx.restore();
+
+  // Name & title
+  const tx = cx + r + 22;
+  const hasTitle = !!S.speakerTitle;
+
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `bold 40px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
+  ctx.fillText(S.speakerName || 'Speaker', tx, hasTitle ? cy - 20 : cy);
+
+  if (hasTitle) {
+    ctx.fillStyle = 'rgba(80,195,240,0.9)';
+    ctx.font = `500 26px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
+    ctx.fillText(S.speakerTitle, tx, cy + 20);
+  }
+
+  // LinkedIn badge (top-right)
+  const bx = W - 120, by = 22, bw = 96, bh = 38;
+  ctx.save();
+  ctx.fillStyle = '#0077B5';
+  roundRect(ctx, bx, by, bw, bh, 8);
+  ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 22px -apple-system, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('in', bx + bw / 2, by + bh / 2);
+  ctx.restore();
+}
+
+function drawText(currentTime, ty, th) {
+  const pad = 52;
+
+  // Background gradient
+  const bg = ctx.createLinearGradient(0, ty, 0, ty + th);
+  bg.addColorStop(0,   'rgba(3, 4, 18, 0.0)');
+  bg.addColorStop(0.25,'rgba(3, 4, 18, 0.96)');
+  bg.addColorStop(1,   'rgba(3, 4, 18, 1.0)');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, ty, W, th);
+
+  const chunk = S.chunks.length > 0 ? currentChunk(currentTime) : null;
+  if (!chunk) return;
+
+  const elapsed = currentTime - chunk.start;
+  const alpha   = Math.min(elapsed / 0.12, 1.0);
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.textAlign   = 'center';
+  ctx.textBaseline = 'top';
+  ctx.shadowColor  = 'rgba(0, 150, 220, 0.45)';
+  ctx.shadowBlur   = 24;
+
+  const fontSize  = 54;
+  const lineH     = fontSize * 1.28;
+  const maxW      = W - pad * 2;
+
+  ctx.font = `bold ${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
+  const lines     = wrapText(ctx, chunk.text, maxW);
+  const totalH    = lines.length * lineH;
+  const startY    = ty + (th - totalH) / 2;
+
+  ctx.fillStyle   = '#ffffff';
+  lines.forEach((line, i) => ctx.fillText(line, W / 2, startY + i * lineH));
+  ctx.restore();
+}
+
+function wrapText(ctx, text, maxW) {
+  const words = text.split(' ');
+  const lines = [];
+  let cur = '';
+  for (const w of words) {
+    const test = cur ? `${cur} ${w}` : w;
+    if (ctx.measureText(test).width > maxW && cur) {
+      lines.push(cur); cur = w;
+    } else { cur = test; }
+  }
+  if (cur) lines.push(cur);
+  return lines;
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x+w, y,   x+w, y+r);
+  ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+  ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x,   y+h, x,   y+h-r);
+  ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x,   y,   x+r, y);
+  ctx.closePath();
+}
+
+// ─────────────────────────────────────────────
+// RENDER LOOP
+// ─────────────────────────────────────────────
+let idleFreq = new Uint8Array(256);
+let idleWave = new Uint8Array(256).fill(128);
+let renderIntervalId = null;
+
+function doRender(ts) {
+  const gl   = S.gl;
+  const prog = S.program;
+  const t    = ts * 0.001;
+
+  // Resize vizCanvas if layout changed (text added/removed)
+  const { VIZ_H } = getLayout();
+  const vc = document.getElementById('vizCanvas');
+  if (vc.height !== VIZ_H) {
+    vc.height = VIZ_H;
+    gl.uniform2f(gl.getUniformLocation(prog, 'u_res'), W, VIZ_H);
+  }
+
+  let volume = 0;
+  let currentTime = 0;
+
+  if ((S.isPlaying || S.isPaused) && S.analyser) {
+    S.analyser.getByteFrequencyData(S.freqData);
+    S.analyser.getByteTimeDomainData(S.waveData);
+    // RMS volume
+    let sum = 0;
+    for (let i = 0; i < S.waveData.length; i++) {
+      const v = S.waveData[i] / 128 - 1;
+      sum += v * v;
+    }
+    const rawVol = Math.sqrt(sum / S.waveData.length);
+    // Exponential moving average — slow to rise, very slow to fall → no jitter
+    S.volumeSmooth = S.isPlaying
+      ? S.volumeSmooth * 0.88 + rawVol * 0.12
+      : S.volumeSmooth * 0.97; // decay slowly when paused
+    volume = S.volumeSmooth;
+    if (S.isPlaying) currentTime = S.audioCtx.currentTime - S.playStart;
+  } else {
+    // Idle: very slow breathing — just enough to show the viz is alive
+    volume = 0.04 + Math.sin(t * 0.55) * 0.02;
+    for (let i = 0; i < 256; i++) {
+      idleFreq[i] = Math.max(0, Math.sin(i * 0.07 + t * 0.4) * 10 + 6) | 0;
+      idleWave[i] = 128 + (Math.sin(i * 0.10 + t * 0.6) * 3) | 0;
+    }
+    S.freqData = idleFreq;
+    S.waveData = idleWave;
+  }
+
+  // Upload data to GPU
+  gl.activeTexture(gl.TEXTURE0);
+  uploadTex(gl, S.freqTex, S.freqData, S.freqRGBA);
+  gl.activeTexture(gl.TEXTURE1);
+  uploadTex(gl, S.waveTex, S.waveData, S.waveRGBA);
+
+  // Bind textures
+  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, S.freqTex);
+  gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, S.waveTex);
+
+  // Set uniforms
+  gl.uniform1f(gl.getUniformLocation(prog, 'u_time'), t);
+  gl.uniform1f(gl.getUniformLocation(prog, 'u_vol'),  Math.min(volume * 3.5, 1.0));
+  gl.uniform3fv(gl.getUniformLocation(prog, 'u_colA'), S.colA);
+  gl.uniform3fv(gl.getUniformLocation(prog, 'u_colB'), S.colB);
+
+  gl.viewport(0, 0, W, VIZ_H);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+  // Composite
+  drawFrame(currentTime, t, volume, VIZ_H);
+
+  // Push frame into captureStream when recording (captureStream(0) manual mode)
+  if (S.captureTrack) S.captureTrack.requestFrame();
+}
+
+function renderLoop(ts) {
+  doRender(ts);
+  // Only re-queue RAF when NOT in interval mode (avoids double-render during recording)
+  if (!renderIntervalId) S.rafId = requestAnimationFrame(renderLoop);
+}
+
+function startRenderInterval() {
+  // Switch from RAF to setInterval so recording works even when tab is backgrounded
+  if (S.rafId) { cancelAnimationFrame(S.rafId); S.rafId = null; }
+  if (renderIntervalId) clearInterval(renderIntervalId);
+  renderIntervalId = setInterval(() => doRender(performance.now()), 1000 / 30);
+}
+
+function stopRenderInterval() {
+  if (renderIntervalId) { clearInterval(renderIntervalId); renderIntervalId = null; }
+  if (!S.rafId) S.rafId = requestAnimationFrame(renderLoop);
+}
+
+// ─────────────────────────────────────────────
+// RECORDING
+// ─────────────────────────────────────────────
+async function startRecord() {
+  if (S.audioCtx.state === 'suspended') await S.audioCtx.resume();
+
+  // Audio stream destination for MediaRecorder
+  S.recordDest = S.audioCtx.createMediaStreamDestination();
+
+  // captureStream(30) auto-rate + requestFrame() explicit push = belt-and-suspenders
+  const vidStream = mainCanvas.captureStream(30);
+  S.captureTrack  = vidStream.getVideoTracks()[0];
+  const aTracks   = S.recordDest.stream.getAudioTracks();
+  if (aTracks.length) vidStream.addTrack(aTracks[0]);
+
+  const mimes = ['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
+  const mime  = mimes.find(m => MediaRecorder.isTypeSupported(m)) || '';
+
+  S.recordedChunks = [];
+  S.mediaRecorder  = new MediaRecorder(vidStream, {
+    mimeType:             mime || undefined,
+    videoBitsPerSecond:   10_000_000,
+  });
+
+  S.mediaRecorder.ondataavailable = e => { if (e.data.size > 0) S.recordedChunks.push(e.data); };
+  S.mediaRecorder.onstop = () => {
+    S.captureTrack = null;
+    stopRenderInterval(); // back to RAF
+    const blob = new Blob(S.recordedChunks, { type: mime || 'video/webm' });
+    if (S.downloadUrl) URL.revokeObjectURL(S.downloadUrl);
+    S.downloadUrl = URL.createObjectURL(blob);
+    document.getElementById('downloadBtn').style.display = '';
+    document.getElementById('downloadBtn').onclick = () => {
+      const a = document.createElement('a');
+      a.href     = S.downloadUrl;
+      a.download = `audiogram-${Date.now()}.webm`;
+      a.click();
+    };
+    setStatus('Done! Click Download.', false);
+    document.getElementById('recordBtn').disabled = false;
+    document.getElementById('recordBtn').textContent = '⏺ Record Video';
+    document.getElementById('previewBtn').disabled = false;
+  };
+
+  S.mediaRecorder.start(100);
+  S.isRecording = true;
+  startRenderInterval(); // switch from RAF → interval so tab focus doesn't matter
+
+  playAudio(() => {
+    S.isRecording = false;
+    if (S.mediaRecorder && S.mediaRecorder.state !== 'inactive') S.mediaRecorder.stop();
+    S.recordDest = null;
+  });
+
+  // Progress
+  const pid = setInterval(() => {
+    if (!S.isPlaying) { clearInterval(pid); return; }
+    const elapsed = S.audioCtx.currentTime - S.playStart;
+    const pct = Math.min(elapsed / S.duration * 100, 100);
+    document.getElementById('progressFill').style.width = pct + '%';
+    setStatus(`Recording… ${fmtTime(elapsed)} / ${fmtTime(S.duration)}`, true);
+  }, 120);
+}
+
+function fmtTime(s) {
+  return `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
+}
+
+function setStatus(msg, rec) {
+  document.getElementById('statusText').textContent = msg;
+  document.getElementById('recDot').style.display   = rec ? '' : 'none';
+  document.getElementById('progressWrap').style.display = rec ? '' : 'none';
+}
+
+// ─────────────────────────────────────────────
+// UPLOAD HELPERS
+// ─────────────────────────────────────────────
+function setupZone(zoneId, inputId, onFile) {
+  const zone  = document.getElementById(zoneId);
+  const input = document.getElementById(inputId);
+  const label = zone.querySelector('.upload-label');
+
+  const handle = async (file) => {
+    if (!file) return;
+    label.innerHTML = `<strong>${file.name}</strong>`;
+    zone.classList.add('done');
+    await onFile(file);
+  };
+
+  input.addEventListener('change', () => handle(input.files[0]));
+
+  zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('dragging'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('dragging'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault(); zone.classList.remove('dragging');
+    handle(e.dataTransfer.files[0]);
+  });
+}
+
+// ─────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────
+async function init() {
+  if (!initWebGL()) return;
+
+  // Start render loop immediately for idle animation
+  S.rafId = requestAnimationFrame(renderLoop);
+
+  // Speaker fields
+  document.getElementById('speakerName').addEventListener('input', e => S.speakerName = e.target.value);
+  document.getElementById('speakerTitle').addEventListener('input', e => S.speakerTitle = e.target.value);
+
+  // Upload zones
+  setupZone('imageZone', 'imageFile', async file => {
+    await new Promise(res => {
+      const img = new Image();
+      img.onload = () => { S.speakerImage = img; res(); };
+      img.src = URL.createObjectURL(file);
+    });
+  });
+
+  setupZone('audioZone', 'audioFile', async file => {
+    S.audioFile = file;
+    await setupAudio(file);
+    rebuildChunks();
+    document.getElementById('previewBtn').disabled = false;
+    document.getElementById('recordBtn').disabled  = false;
+    setStatus('Ready — click Preview or Record', false);
+  });
+
+  document.getElementById('transcriptInput').addEventListener('input', e => {
+    S.transcript  = e.target.value;
+    S.whisperData = null;
+    document.getElementById('whisperZone').classList.remove('done');
+    document.getElementById('whisperZone').querySelector('.upload-label').innerHTML =
+      '<strong>Click</strong> or drop Whisper JSON';
+    rebuildChunks();
+    if (S.chunks.length) setStatus(`${S.chunks.length} captions ready`, false);
+  });
+
+  setupZone('whisperZone', 'whisperFile', async file => {
+    const text = await file.text();
+    let json;
+    try { json = JSON.parse(text); } catch { setStatus('Invalid JSON', false); return; }
+    if (!Array.isArray(json) || !json[0]?.timestamp) {
+      setStatus('Not a Whisper JSON (expected [{timestamp, text}])', false); return;
+    }
+    S.whisperData = json;
+    S.transcript  = '';
+    document.getElementById('transcriptInput').value = '';
+    rebuildChunks();
+    setStatus(`${S.chunks.length} captions loaded from Whisper`, false);
+  });
+
+  // Color pickers
+  function hexToVec3(hex) {
+    return [
+      parseInt(hex.slice(1,3), 16) / 255,
+      parseInt(hex.slice(3,5), 16) / 255,
+      parseInt(hex.slice(5,7), 16) / 255,
+    ];
+  }
+  document.getElementById('colPrimary').addEventListener('input', e => {
+    S.colA = hexToVec3(e.target.value);
+  });
+  document.getElementById('colAccent').addEventListener('input', e => {
+    S.colB = hexToVec3(e.target.value);
+  });
+
+  // Chunk size slider
+  const chunkSlider = document.getElementById('chunkSize');
+  const chunkVal    = document.getElementById('chunkSizeVal');
+  chunkSlider.addEventListener('input', e => {
+    S.wordsPerChunk = parseInt(e.target.value);
+    chunkVal.textContent = e.target.value;
+    rebuildChunks();
+  });
+
+  // Text pace slider
+  const paceSlider = document.getElementById('textPace');
+  const paceVal    = document.getElementById('textPaceVal');
+  paceSlider.addEventListener('input', e => {
+    S.textPace = parseFloat(e.target.value);
+    paceVal.textContent = S.textPace.toFixed(1) + '×';
+    rebuildChunks();
+  });
+
+  // Caption modal wiring
+  document.getElementById('editCaptionsBtn').addEventListener('click', openCaptionModal);
+  document.getElementById('closeCaptionModalBtn').addEventListener('click', closeCaptionModal);
+  document.getElementById('closeCaptionModalBtn2').addEventListener('click', closeCaptionModal);
+  document.getElementById('downloadCaptionsBtn').addEventListener('click', downloadCaptionsJSON);
+  document.getElementById('addCaptionRowBtn').addEventListener('click', () => {
+    const last = S.chunks[S.chunks.length - 1];
+    const start = last ? last.end : 0;
+    S.chunks.push({ text: '', start, end: start + 3 });
+    renderCaptionTable();
+  });
+  // Close on backdrop click
+  document.getElementById('captionModal').addEventListener('click', e => {
+    if (e.target === document.getElementById('captionModal')) closeCaptionModal();
+  });
+
+  // Preview button — cycles: Play → Pause → Resume → (ended) Restart
+  const previewBtn = document.getElementById('previewBtn');
+
+  function startPreview() {
+    S.recordDest = null;
+    S.isPaused   = false;
+    document.getElementById('progressWrap').style.display = '';
+    document.getElementById('progressFill').style.width   = '0%';
+    playAudio(() => {
+      S.isPaused = false;
+      previewBtn.textContent = '↺ Restart';
+      setStatus('Preview done', false);
+    });
+    previewBtn.textContent = '⏸ Pause';
+    const pid = setInterval(() => {
+      if (!S.isPlaying && !S.isPaused) { clearInterval(pid); return; }
+      if (!S.isPlaying) return; // paused — don't advance bar
+      const elapsed = S.audioCtx.currentTime - S.playStart;
+      document.getElementById('progressFill').style.width = Math.min(elapsed / S.duration * 100, 100) + '%';
+      setStatus(`${fmtTime(elapsed)} / ${fmtTime(S.duration)}`, false);
+    }, 120);
+  }
+
+  previewBtn.addEventListener('click', async () => {
+    if (!S.audioCtx) return;
+
+    if (S.isPaused) {
+      // Resume
+      await S.audioCtx.resume();
+      S.isPaused = false;
+      S.isPlaying = true;
+      previewBtn.textContent = '⏸ Pause';
+      return;
+    }
+
+    if (S.isPlaying) {
+      // Pause
+      await S.audioCtx.suspend();
+      S.isPaused  = true;
+      S.isPlaying = false;
+      previewBtn.textContent = '▶ Resume';
+      setStatus('Paused', false);
+      return;
+    }
+
+    // Start / restart
+    if (S.audioCtx.state === 'suspended') await S.audioCtx.resume();
+    if (S.sourceNode) { try { S.sourceNode.stop(); } catch(e){} }
+    startPreview();
+  });
+
+  // Record button
+  document.getElementById('recordBtn').addEventListener('click', async () => {
+    if (S.isRecording) return;
+    // Un-pause if needed, then stop current playback
+    if (S.isPaused) { await S.audioCtx.resume(); S.isPaused = false; }
+    if (S.isPlaying) { try { S.sourceNode.stop(); } catch(e){} await new Promise(r => setTimeout(r, 80)); }
+    previewBtn.textContent = '▶ Preview';
+    document.getElementById('recordBtn').disabled  = true;
+    document.getElementById('previewBtn').disabled = true;
+    document.getElementById('downloadBtn').style.display = 'none';
+    document.getElementById('progressFill').style.width = '0%';
+    await startRecord();
+  });
+}
+
+window.addEventListener('load', init);
+</script>
+</body>
+</html>
