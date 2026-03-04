@@ -15,12 +15,12 @@ To help create an eye-catching video from an audio file with optional text
 This is a single file browser app. It doesn't have any server interaction. Go to
 the link in this repo to start using it immediately.
 
-You can also clone this repo and serve `src/` with a local web server.
+You can also clone this repo and serve with a local web server.
 
 **Example server:**
 
 ```python
-python3 -m http.server --directory ./src 8000
+python3 -m http.server 8000
 ```
 
 ## Capabilities
