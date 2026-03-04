@@ -5,6 +5,8 @@ video) for linkedin.
 
 Main repo: [audiogram](https://github.com/ohmstone/audiogram)
 
+## [**CLICK HERE TO USE IT**](https://ohmstone.github.io/audiogram/)
+
 ## Purpose
 
 To help create an eye-catching video from an audio file with optional text
